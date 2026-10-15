@@ -1,0 +1,7 @@
+_state/
+_shots/
+__pycache__/
+*.pyc
+_srv.log
+chat-export-*.json
+Thumbs.db
