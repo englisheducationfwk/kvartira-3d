@@ -323,6 +323,12 @@ body.touch #paintPick{bottom:calc(210px + env(safe-area-inset-bottom))}
 #ppPats{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-width:540px}
 #ppPats button{padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.3);color:#e8e2d6;font-size:11.5px}
 #ppPats button.on{background:#fff;color:#221f1a;font-weight:700}
+#ppTex{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.txrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tx{width:46px;height:46px;border-radius:9px;border:2px solid rgba(120,110,90,.35);background-size:cover;background-position:center;cursor:pointer;display:grid;place-items:center;color:#6b655a}
+.tx.on{border-color:#2c2a25;box-shadow:0 0 0 2px rgba(44,42,37,.3)}
+#ppTex .tx{border-color:rgba(255,255,255,.25);color:#cfc9bc}
+#ppTex .tx.on{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
 #patRow{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 #patRow button{padding:4px 9px;border:1px solid var(--line);border-radius:999px;font-size:11.5px;font-weight:600;color:#6b655a}
 #patRow button.on{background:#2c2a25;color:#fff}
@@ -426,9 +432,13 @@ body.touch #paintPick{bottom:calc(210px + env(safe-area-inset-bottom))}
           <div class="pick" style="margin-top:9px"><input type="color" id="pw"><span>свой цвет стен</span></div>
           <p style="font-size:12.3px;color:var(--mut);margin:12px 0 0">Узор стены (краска, без обоев)</p>
           <div id="patRow"></div>
+          <p style="font-size:12.3px;color:var(--mut);margin:12px 0 0">Текстура стены — настоящие (штукатурка, бетон)</p>
+          <div class="txrow" id="swWallTex"></div>
           <p style="font-size:12.3px;color:var(--mut);margin:12px 0 8px">Фасады кухни (эмаль)</p>
           <div class="swatches" id="swFacades"></div>
           <div class="pick" style="margin-top:9px"><input type="color" id="pf"><span>свой цвет фасадов</span></div>
+          <p style="font-size:12.3px;color:var(--mut);margin:12px 0 0">Текстура фасадов — настоящее дерево</p>
+          <div class="txrow" id="swFacadeTex"></div>
           <p style="font-size:12.3px;color:var(--mut);margin:12px 0 8px">Ручки гарнитура</p>
           <div class="swatches" id="swHandles"></div>
         </div>
@@ -440,6 +450,23 @@ body.touch #paintPick{bottom:calc(210px + env(safe-area-inset-bottom))}
           <label class="chk"><input type="checkbox" id="ckDims"><span>Размеры на плане</span></label>
           <label class="chk"><input type="checkbox" id="ckFurn" checked><span>Мебель и мелочи</span></label>
           <label class="chk"><input type="checkbox" id="ckMap"><span>Мини-карта в прогулке</span></label>
+        </div>
+        <div class="pblock">
+          <h3>Свет · время суток и сезон</h3>
+          <label class="chk"><input type="checkbox" id="ckSunReal" checked><span>Реалистичное освещение — солнце, небо, тени как в жизни</span></label>
+          <label class="chk"><input type="checkbox" id="ckAutoTime" checked><span>Время — по часам компьютера (живое)</span></label>
+          <p style="font-size:12.3px;color:var(--mut);margin:10px 0 4px">Время: <b id="hourLbl">13:00</b></p>
+          <input type="range" id="hourR" min="0" max="24" step="0.25" value="13">
+          <div class="chips" id="timeChips" style="margin-top:6px">
+            <button data-h="7.5">🌅 Утро</button><button data-h="13">☀️ День</button>
+            <button data-h="20.5">🌇 Закат</button><button data-h="1">🌙 Ночь</button>
+          </div>
+          <p style="font-size:12.3px;color:var(--mut);margin:12px 0 4px">Сезон: <b id="seasonLbl">по дате</b></p>
+          <div class="chips" id="seasonChips">
+            <button data-s="-1">По дате</button><button data-s="0">❄️ Зима</button>
+            <button data-s="1">🌱 Весна</button><button data-s="2">☀️ Лето</button><button data-s="3">🍂 Осень</button>
+          </div>
+          <p style="font-size:11.8px;color:#9a9384;margin-top:8px">Зимой двор и крыши в снегу, солнце низкое. Ночью квартира тёмная — свет включается выключателями у дверей.</p>
         </div>
         <div class="pblock">
           <h3>Пресеты <span class="sp">твои расстановки</span></h3>
@@ -532,6 +559,7 @@ body.touch #paintPick{bottom:calc(210px + env(safe-area-inset-bottom))}
   <div class="pp-head"><b id="ppTitle">Стена кухни</b><span id="ppClose" title="Закрыть">✕</span></div>
   <div class="swatches" id="ppSw" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   <div id="ppPats" class="hidden"></div>
+  <div id="ppTex" class="hidden"></div>
   <div class="pick" style="margin-top:8px"><input type="color" id="ppCustom"><span style="color:#cfc9bc">свой цвет</span></div>
 </div></div>
 
@@ -2744,6 +2772,50 @@ body.touch #paintPick{bottom:calc(210px + env(safe-area-inset-bottom))}
    ],
    "check": "Всё собрано, ручки на месте, кухня готова 🎉"
   }
+ ],
+ "texlib": [
+  {
+   "id": "plaster-fine",
+   "name": "Штукатурка тонкая",
+   "dir": "assets/tex/PaintedPlaster017",
+   "k": 1.0
+  },
+  {
+   "id": "plaster-rough",
+   "name": "Штукатурка фактурная",
+   "dir": "assets/tex/Plaster001",
+   "k": 1.0
+  },
+  {
+   "id": "concrete",
+   "name": "Бетон · микроцемент",
+   "dir": "assets/tex/Concrete034",
+   "k": 0.9
+  },
+  {
+   "id": "wood-dub",
+   "name": "Дуб классический",
+   "dir": "assets/tex/Wood070",
+   "k": 1.0
+  },
+  {
+   "id": "wood-light",
+   "name": "Дуб светлый",
+   "dir": "assets/tex/Wood066",
+   "k": 1.0
+  },
+  {
+   "id": "wood-nut",
+   "name": "Орех тёмный",
+   "dir": "assets/tex/Wood092",
+   "k": 0.9
+  },
+  {
+   "id": "wood-worn",
+   "name": "Дерево состаренное",
+   "dir": "assets/tex/Wood051",
+   "k": 1.0
+  }
  ]
 };</script>
 <script>
@@ -2765,6 +2837,7 @@ var fmt = function(n){ return Math.round(n).toLocaleString('ru-RU') + ' ₽'; };
 var LS = 'flat44k.v5';   /* v5: зеркала по умолчанию выкл */
 var state = { stage:0, mode:'walk', mirror:false, wall:D.palette.walls[0].hex, facade:D.palette.facades[0].hex,
               spots:true, dims:false, furn:true, map:false, mirrOn:false, view:'overview',
+              sunReal:true, autoTime:true, hour:13, season:-1, wallTex:null, facadeTex:null,
               wallPat:'solid', handle:D.palette.handles[0].hex,
               variant:{}, bought:{}, stepDone:{}, inv:[], moved:{}, wpos:null, wyaw:0, wpitch:0, wpoy:0, noclip:false };
 try { var saved = JSON.parse(localStorage.getItem(LS)||'{}'); for (var k in saved) if (k in state) state[k]=saved[k]; } catch(e){}
@@ -2855,15 +2928,113 @@ function texPaint(hex, pat){
   paintCache[key] = tex;
   return tex;
 }
+/* ---------- настоящие текстуры (CC0-паки): галерея, загрузка, применение ---------- */
+var TEXCACHE = {};
+var texLoader = new THREE.TextureLoader();
+function texFor(set, kind, slot){
+  var key = set.def.id + ':' + kind + ':' + slot;
+  if (!TEXCACHE[key]){
+    var src = slot === 'color' ? set.color : (slot === 'normal' ? set.normal : set.rough);
+    if (!src) return null;
+    var t = src.clone();
+    t.needsUpdate = true;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = 8;
+    var k = (set.def.k || 1) * (kind === 'wall' ? 0.85 : 0.9);
+    t.repeat.set(k, k);
+    TEXCACHE[key] = t;
+  }
+  return TEXCACHE[key];
+}
+function loadTexSet(id, cb){
+  var def = (D.texlib || []).filter(function(x){ return x.id === id; })[0];
+  if (!def) return cb && cb(null);
+  var set = TEXCACHE['set:' + id];
+  if (set && set.ready) return cb && cb(set);
+  if (!set){
+    set = { def: def, color: null, normal: null, rough: null, ready: false };
+    TEXCACHE['set:' + id] = set;
+    var base = def.dir + '/', pend = 3;
+    function done(){ if (--pend === 0){ set.ready = true; if (cb) cb(set); } }
+    function fail(){ done(); }
+    texLoader.load(base + 'color.webp', function(t){ t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; set.color = t; done(); }, undefined, fail);
+    texLoader.load(base + 'normal.webp', function(t){ t.wrapS = t.wrapT = THREE.RepeatWrapping; set.normal = t; done(); }, undefined, fail);
+    texLoader.load(base + 'rough.webp', function(t){ t.wrapS = t.wrapT = THREE.RepeatWrapping; set.rough = t; done(); }, undefined, fail);
+  }
+}
+function readySet(id){
+  var set = id && TEXCACHE['set:' + id];
+  return (set && set.ready) ? set : null;
+}
 function applyWallPaint(){
   var pat = state.wallPat || 'solid';
-  if (pat === 'solid'){
-    M.paint.map = null; M.paint.color.set(state.wall);
-  } else {
+  var set = readySet(state.wallTex);
+  M.paint.map = null; M.paint.normalMap = null; M.paint.roughnessMap = null;
+  M.paint.roughness = .88;
+  if (set){
+    M.paint.map = texFor(set, 'wall', 'color');
+    M.paint.color.set(state.wall);
+    if (set.normal){ M.paint.normalMap = texFor(set, 'wall', 'normal'); M.paint.normalScale.set(0.45, 0.45); }
+    if (set.rough){ M.paint.roughnessMap = texFor(set, 'wall', 'rough'); M.paint.roughness = 1.0; }
+  } else if (pat !== 'solid'){
     M.paint.map = texPaint(state.wall, pat);
     M.paint.color.set('#ffffff');
+  } else {
+    M.paint.color.set(state.wall);
   }
   M.paint.needsUpdate = true;
+}
+function applyFrontPaint(){
+  var set = readySet(state.facadeTex);
+  M.front.map = texGroove; M.front.normalMap = null; M.front.roughnessMap = null;
+  M.front.roughness = .55;
+  M.front.color.set(state.facade);
+  if (set){
+    M.front.map = texFor(set, 'front', 'color');
+    if (set.normal){ M.front.normalMap = texFor(set, 'front', 'normal'); M.front.normalScale.set(0.35, 0.35); }
+    if (set.rough){ M.front.roughnessMap = texFor(set, 'front', 'rough'); M.front.roughness = 1.0; }
+  }
+  M.front.needsUpdate = true;
+}
+function pickWallTex(id){
+  state.wallTex = id; save();
+  if (id && !readySet(id)){ toast('Загружаю текстуру…'); loadTexSet(id, function(){ applyWallPaint(); }); }
+  applyWallPaint();
+  markTexRows();
+}
+function pickFacadeTex(id){
+  state.facadeTex = id; save();
+  if (id && !readySet(id)){ toast('Загружаю текстуру…'); loadTexSet(id, function(){ applyFrontPaint(); }); }
+  applyFrontPaint();
+  markTexRows();
+}
+function markTexRows(){
+  $$('.tx').forEach(function(b){
+    var cur = b.dataset.kind === 'front' ? (state.facadeTex || '') : (state.wallTex || '');
+    b.classList.toggle('on', (b.dataset.tx || '') === cur);
+  });
+}
+function texRow(host, kind, jumpStage){
+  if (!host) return;
+  host.innerHTML = '';
+  function mkBtn(id, label, bg){
+    var b = document.createElement('button');
+    b.className = 'tx';
+    b.dataset.tx = id || '';
+    b.dataset.kind = kind;
+    if (bg) b.style.backgroundImage = 'url(' + bg + ')';
+    b.title = label;
+    if (!id) b.innerHTML = '<span style="font-size:10px">гладко</span>';
+    b.addEventListener('click', function(){
+      if (kind === 'wall') pickWallTex(id); else pickFacadeTex(id);
+      if (jumpStage && state.stage !== 5) applyStage(5);
+      toast((kind === 'wall' ? 'Стена: ' : 'Фасад: ') + label);
+    });
+    host.appendChild(b);
+  }
+  mkBtn(null, 'гладкая краска', null);
+  (D.texlib || []).forEach(function(t){ mkBtn(t.id, t.name, t.dir + '/color.webp'); });
+  markTexRows();
 }
 function applyHandle(){
   if (!state.handle) return;
@@ -3012,14 +3183,10 @@ var texPatch = ctex(256,256,function(g,w,h){
   g.fillStyle=grd; g.beginPath(); g.ellipse(w/2,h/2,w/2-2,h/2-6,0,0,6.3); g.fill();
 });
 /* вид с 12-го этажа: небо, город у горизонта, ниже — двор со высоты птичьего полёта */
-var texOutside = ctex(1024,512,function(g,w,h){
+function paintOutside(g, w, h, winter){
   var R = rng(13);
   var HZ = h*0.405;                      /* линия горизонта — примерно на уровне глаз */
-  var grd=g.createLinearGradient(0,0,0,HZ);
-  grd.addColorStop(0,'#a9cdec'); grd.addColorStop(.6,'#cfe4f0'); grd.addColorStop(1,'#e8efe0');
-  g.fillStyle=grd; g.fillRect(0,0,w,HZ);
-  g.fillStyle='rgba(255,255,255,.6)';
-  for (var i=0;i<12;i++){ g.beginPath(); g.ellipse(R()*w, h*0.05+R()*h*0.22, 60+R()*120, 11+R()*20, 0, 0, 6.3); g.fill(); }
+  /* небо не рисуем — верх прозрачный, там настоящее небо (шейдер) */
   /* дальний город — крыши чуть ниже горизонта (смотрим с высоты) */
   for (var i=0;i<26;i++){ var bh=(0.08+R()*0.13)*h, bw=36+R()*80, x=R()*w, y=HZ-bh*0.25;
     g.fillStyle='rgba(158,170,178,'+(0.45+R()*0.35).toFixed(2)+')'; g.fillRect(x,y,bw,bh);
@@ -3051,9 +3218,23 @@ var texOutside = ctex(1024,512,function(g,w,h){
     g.fillStyle='rgba(90,110,80,.32)'; g.beginPath(); g.arc(tx+tr*0.12, ty+tr*0.16, tr, 0, 6.3); g.fill();
     g.fillStyle='rgba(104,138,88,'+(0.5+R()*0.4).toFixed(2)+')'; g.beginPath(); g.arc(tx, ty, tr, 0, 6.3); g.fill();
   }
-});
+  if (winter){                                  /* зима: двор засыпан, дорога проступает */
+    g.fillStyle='rgba(244,248,253,.9)'; g.fillRect(0, HZ, w, h-HZ);
+    var ry2 = HZ + h*0.02, rh2 = h*0.05;
+    g.fillStyle='rgba(148,153,160,.55)'; g.fillRect(0, ry2, w, rh2);
+    g.fillStyle='rgba(255,250,235,.45)';
+    for (var xw=8; xw<w; xw+=48) g.fillRect(xw, ry2+rh2/2-1.5, 22, 3);
+    for (var tw2=0; tw2<36; tw2++){
+      var fw=R(), txw=R()*w, tyw=HZ+4+fw*(h-HZ-8), trw=4+fw*26;
+      g.fillStyle='rgba(150,158,168,'+(0.25+R()*0.25).toFixed(2)+')';
+      g.beginPath(); g.arc(txw, tyw, trw, 0, 6.3); g.fill();
+    }
+  }
+}
+var texOutside = ctex(1024,512,function(g,w,h){ paintOutside(g,w,h,false); });
+var texOutsideWinter = null;
 /* земля далеко внизу (12-й этаж): двор, парковки, шоссе — если смотреть вниз */
-var texYard = ctex(1024,1024,function(g,w,h){
+function paintYard(g, w, h, winter){
   var R = rng(77);
   g.fillStyle='#b7c8a8'; g.fillRect(0,0,w,h);
   g.fillStyle='#c3d1b2';
@@ -3089,7 +3270,17 @@ var texYard = ctex(1024,1024,function(g,w,h){
   /* детская площадка */
   g.fillStyle='#d8b56a'; g.fillRect(w*0.42, h*0.60, w*0.14, h*0.10);
   g.fillStyle='#b45b4a'; g.fillRect(w*0.44, h*0.62, 40, 40); g.fillRect(w*0.49, h*0.64, 60, 24);
-});
+  if (winter){                                  /* зима: снег, сквозь него дорожки и шоссе */
+    g.fillStyle='rgba(245,249,253,.88)'; g.fillRect(0, 0, w, h);
+    g.fillStyle='rgba(150,155,162,.5)';
+    g.fillRect(w*0.18, 0, 34, h); g.fillRect(0, h*0.34, w, 30); g.fillRect(w*0.62, h*0.34, 30, h*0.66);
+    g.fillStyle='rgba(140,146,154,.55)'; g.fillRect(0, h*0.80, w, h*0.13);
+    g.fillStyle='rgba(255,250,235,.5)';
+    for (var xs=14; xs<w; xs+=80) g.fillRect(xs, h*0.80+h*0.065-3, 40, 6);
+  }
+}
+var texYard = ctex(1024,1024,function(g,w,h){ paintYard(g,w,h,false); });
+var texYardWinter = null;
 /* стена панельного дома — уходит вниз от нашей квартиры до земли */
 var texTower = ctex(256, 256, function(g,w,h){
   g.fillStyle='#cfc8b8'; g.fillRect(0,0,w,h);
@@ -3149,6 +3340,8 @@ var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
 if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
 renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -3162,8 +3355,10 @@ controls.minDistance = 0.7; controls.maxDistance = 40;
 controls.maxPolarAngle = Math.PI*0.495;
 controls.screenSpacePanning = true;
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.34));
-scene.add(new THREE.HemisphereLight(0xfff6e8, 0x9d9484, 0.5));
+var ambLight = new THREE.AmbientLight(0xffffff, 0.34);
+scene.add(ambLight);
+var hemiLight = new THREE.HemisphereLight(0xfff6e8, 0x9d9484, 0.5);
+scene.add(hemiLight);
 var sun = new THREE.DirectionalLight(0xfff2dd, 1.1);
 sun.position.set(3.2, 7.5, -9.5); sun.target.position.set(3.2, 0.6, 3.5);
 sun.castShadow = true;
@@ -3173,6 +3368,144 @@ sun.shadow.camera.near=1; sun.shadow.camera.far=26; sun.shadow.bias=-0.0004; sun
 scene.add(sun); scene.add(sun.target);
 var fill = new THREE.DirectionalLight(0xdde7f2, 0.32); fill.position.set(-4, 4.5, 4); scene.add(fill);
 var fill2 = new THREE.DirectionalLight(0xfff0e0, 0.18); fill2.position.set(6, 3.0, 6.5); scene.add(fill2);
+
+/* =====================================================================
+   РЕАЛИСТИЧНОЕ ОСВЕЩЕНИЕ: солнце по времени суток и сезону (Москва),
+   небо-шейдер, свет из неба (PMREM), снег зимой
+   ===================================================================== */
+var OUT_MATS = [];   /* материалы улицы — тонируются светом дня */
+var applySnow = null;   /* назначается при сборке мира */
+var skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: {
+    sunDir: { value: new THREE.Vector3(0, 1, 0) },
+    dayT:   { value: 1 }, dusk: { value: 0 }, night: { value: 0 },
+    skyTop: { value: new THREE.Color(0x79b9ea) },
+    skyHor: { value: new THREE.Color(0xdfeaf2) },
+    sunCol: { value: new THREE.Color(0xfff3e2) }
+  },
+  vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: [
+    'varying vec3 vDir;',
+    'uniform vec3 sunDir; uniform float dayT, dusk, night;',
+    'uniform vec3 skyTop, skyHor, sunCol;',
+    'void main(){',
+    '  float h = clamp(vDir.y, -0.05, 1.0);',
+    '  vec3 col = mix(skyHor, skyTop, pow(max(h, 0.0), 0.55));',
+    '  float s = max(dot(normalize(vDir), normalize(sunDir)), 0.0);',
+    '  col += sunCol * pow(s, 200.0) * 2.4;',                       /* диск солнца */
+    '  col += sunCol * pow(s, 5.0) * (0.22 + 0.5*dusk);',           /* ореол, на закате шире */
+    '  if (night > 0.02){',
+    '    vec3 sd = floor(vDir * 230.0);',
+    '    float st = fract(sin(dot(sd, vec3(12.9898, 78.233, 45.164))) * 43758.5453);',
+    '    float star = smoothstep(0.9976, 1.0, st) * night * smoothstep(0.02, 0.22, vDir.y);',
+    '    col += vec3(star);',
+    '  }',
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'
+  ].join('\n')
+});
+var skyMesh = new THREE.Mesh(new THREE.SphereGeometry(88, 32, 18), skyMat);
+skyMesh.frustumCulled = false;
+scene.add(skyMesh);
+var pmrem = null, envRT = null, skyScratch = null, skyScratchMesh = null;
+var lastSunSig = '';
+function nowHour(){ var d2 = new Date(); return d2.getHours() + d2.getMinutes()/60; }
+function seasonDoy(){
+  if (state.season >= 0 && state.season <= 3) return [355, 80, 172, 266][state.season];
+  var now = new Date(), start = new Date(now.getFullYear(), 0, 0);
+  return Math.floor((now - start) / 86400000);
+}
+function isWinter(){
+  if (state.season === 0) return true;
+  if (state.season > 0) return false;
+  var m2 = new Date().getMonth();
+  return (m2 === 11 || m2 === 0 || m2 === 1);
+}
+function sunPos(hour, doy){
+  var lat = 55.9 * Math.PI/180;
+  var decl = 23.44 * Math.PI/180 * Math.sin(2*Math.PI*(doy - 81)/365);
+  var H = (hour - 12.5) * Math.PI/12;
+  var el = Math.asin(Math.sin(lat)*Math.sin(decl) + Math.cos(lat)*Math.cos(decl)*Math.cos(H));
+  var az = Math.atan2(-Math.sin(H), Math.tan(decl)*Math.cos(lat) - Math.sin(lat)*Math.cos(H));
+  return { el: el, az: az };   /* az: 0 = юг (у нас юг = +z) */
+}
+function regenEnv(){
+  if (!pmrem) pmrem = new THREE.PMREMGenerator(renderer);
+  if (!skyScratch){
+    skyScratch = new THREE.Scene();
+    skyScratchMesh = new THREE.Mesh(new THREE.SphereGeometry(80, 24, 14), skyMat);
+    skyScratchMesh.frustumCulled = false;
+    skyScratch.add(skyScratchMesh);
+  }
+  var rt = pmrem.fromScene(skyScratch, 0.05);
+  if (envRT) envRT.dispose();
+  envRT = rt;
+  scene.environment = envRT.texture;
+}
+function applySun(force){
+  if (state.sunReal === false){                       /* «студийный» свет как раньше */
+    skyMesh.visible = false;
+    scene.background = new THREE.Color(0xdfe3e6);
+    scene.environment = null;
+    lastSunSig = '';
+    ambLight.intensity = 0.34; hemiLight.intensity = 0.5;
+    sun.color.set(0xfff2dd); sun.intensity = 1.1;
+    sun.position.set(3.2, 7.5, -9.5);
+    fill.intensity = 0.32; fill2.intensity = 0.18;
+    OUT_MATS.forEach(function(m){ m.color.set(0xffffff); });
+    if (M.outside) M.outside.map = texOutside;
+    M.outside.needsUpdate = true;
+    if (applySnow) applySnow(false);
+    return;
+  }
+  skyMesh.visible = true;
+  scene.background = new THREE.Color(0x0a1024);
+  var hour = state.autoTime ? nowHour() : (state.hour || 13);
+  var doy = seasonDoy();
+  var sp = sunPos(hour, doy);
+  var elD = sp.el * 180/Math.PI;
+  var day = clamp((elD + 4) / 10, 0, 1);              /* 0 ночь → 1 день */
+  var dusk = clamp(1 - Math.abs(elD - 2)/9, 0, 1);    /* у горизонта */
+  var night = 1 - clamp((elD + 2)/7, 0, 1);
+  var sunI = Math.max(0, Math.sin(Math.max(sp.el, 0))) * 1.75;
+  var r2 = 26;
+  var sx = Math.cos(sp.el)*Math.sin(sp.az), sy = Math.sin(sp.el), sz = Math.cos(sp.el)*Math.cos(sp.az);
+  sun.position.set(3.2 + sx*r2, Math.max(sy*r2, 0.3), 3.5 + sz*r2);
+  sun.visible = sunI > 0.02;
+  sun.intensity = sunI;
+  sun.color.set(0xff6a26).lerp(new THREE.Color(0xfff3e2), clamp(elD/25, 0, 1));
+  /* небо */
+  var top = new THREE.Color(0x0a1024).lerp(new THREE.Color(0x79b9ea), day);
+  var hor = new THREE.Color(0x161e36).lerp(new THREE.Color(0xdfeaf2), day);
+  hor.lerp(new THREE.Color(0xff9d5c), dusk*0.7);
+  skyMat.uniforms.skyTop.value.copy(top);
+  skyMat.uniforms.skyHor.value.copy(hor);
+  skyMat.uniforms.dayT.value = day;
+  skyMat.uniforms.dusk.value = dusk;
+  skyMat.uniforms.night.value = night;
+  skyMat.uniforms.sunCol.value.copy(sun.color);
+  skyMat.uniforms.sunDir.value.set(sx, sy, sz);
+  /* общий свет */
+  ambLight.intensity = 0.07 + 0.26*day;
+  hemiLight.intensity = 0.12 + 0.42*day;
+  hemiLight.color.copy(hor);
+  fill.intensity = 0.32*day;
+  fill2.intensity = 0.18*day;
+  /* улица: тон дня */
+  var tint = new THREE.Color(0x2a3450).lerp(new THREE.Color(0xffffff), day);
+  tint.lerp(new THREE.Color(0xffc79a), dusk*0.5);
+  OUT_MATS.forEach(function(m){ m.color.copy(tint); });
+  /* снег по сезону */
+  if (applySnow) applySnow(isWinter());
+  /* свет из неба — пересчёт только при заметном изменении */
+  var sig = day.toFixed(2) + '|' + dusk.toFixed(2) + '|' + (state.season) + '|' + (isWinter()?1:0);
+  if (force || sig !== lastSunSig){
+    lastSunSig = sig;
+    regenEnv();
+  }
+}
+var lastSunT = 0;
 
 var texFire = ctex(128, 128, function(g,w,h){
   g.fillStyle = '#c23a2b'; g.fillRect(0, 0, w, h);
@@ -3232,7 +3565,7 @@ var M = {
   tape:      new THREE.MeshStandardMaterial({ color:0x7ba7d7, roughness:.85 }),
   film:      new THREE.MeshStandardMaterial({ color:0xe4eaf0, roughness:.9, transparent:true, opacity:.32 }),
   white:     new THREE.MeshStandardMaterial({ color:0xfbfaf7, roughness:.4 }),
-  outside:   new THREE.MeshBasicMaterial({ map:texOutside, side:THREE.DoubleSide }),
+  outside:   new THREE.MeshBasicMaterial({ map:texOutside, side:THREE.DoubleSide, transparent:true }),
   mold:      new THREE.MeshBasicMaterial({ map:texMold, transparent:true, depthWrite:false }),
   patch:     new THREE.MeshBasicMaterial({ map:texPatch, transparent:true, depthWrite:false }),
   hole:      new THREE.MeshBasicMaterial({ color:0x8d8578 })
@@ -3958,6 +4291,7 @@ function buildWorld(){
   for (var i2=0;i2<4;i2++){
     var z2 = 0.50 + LWD/2 + i2*LWD;
     var pd = new THREE.Mesh(new THREE.BoxGeometry(0.02, LOWH-0.04, LWD-0.02), M.front);
+    fixBoxUV(pd.geometry, 0.02, LOWH-0.04, LWD-0.02, 1.667);
     pd.position.set(mx(KX-0.61), BASE+LOWH/2, z2); pd.castShadow = pd.receiveShadow = true;
     var hd = mkHinge(pd, mx(KX-0.61), z2 - (LWD-0.02)/2 + 0.01, 'ящик', -1.8, doorsGrp);
     var h2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.13), M.handleOld);
@@ -3995,6 +4329,7 @@ function buildWorld(){
     if (i3 === 1){
       /* половинчатый шкафчик над плитой: полудверца сверху + полка под ней */
       var d2h = new THREE.Mesh(new THREE.BoxGeometry(0.02, UPH/2-0.03, UZD-0.02), M.front);
+      fixBoxUV(d2h.geometry, 0.02, UPH/2-0.03, UZD-0.02, 1.667);
       d2h.position.set(mx(KX-0.35), (UYM+UY1)/2-0.005, uz); d2h.castShadow = d2h.receiveShadow = true;
       var hh2 = mkHinge(d2h, mx(KX-0.35), uz-(UZD-0.02)/2+0.01, 'шкафчик', -1.8, upGrp);
       var uhh = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.13, 0.02), M.handleOld);
@@ -4002,6 +4337,7 @@ function buildWorld(){
       uhh.castShadow = true; handles.push(uhh); hh2.grp.add(uhh);
     } else {
       var d2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, UPH-0.02, UZD-0.02), M.front);
+      fixBoxUV(d2.geometry, 0.02, UPH-0.02, UZD-0.02, 1.667);
       d2.position.set(mx(KX-0.35), UYM, uz); d2.castShadow = d2.receiveShadow = true;
       var hu = mkHinge(d2, mx(KX-0.35), uz - (UZD-0.02)/2 + 0.01, 'шкафчик', -1.8, upGrp);
       var uh = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.13, 0.02), M.handleOld);
@@ -4051,8 +4387,20 @@ function buildWorld(){
   mkSocket(K.x0, 0.16, 0.17, 1, 1);
   mkSocket(K.x1, 1.17, 3.764, -1, 1);
   /* кухня: люстра с тремя плафонами — как в коридоре (вместо датчика на потолке) */
-  var kitLight = new THREE.PointLight(0xffe8c0, 0.45, 6.5, 2);
+  var kitLight = new THREE.PointLight(0xffe8c0, 0.0, 6.5, 2);   /* включается выключателем, как в жизни */
   kitLight.position.set(mx(4.60), 2.30, 1.10); gRoom.add(kitLight);
+  /* выключатель кухни — на южной стене слева от двери */
+  (function(){
+    var bx = mx(3.62);
+    var pl = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.014), M.frame);
+    pl.position.set(bx, 1.55, K.z1-0.012); gRoom.add(pl);
+    var rock = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.05, 0.014), M.white);
+    rock.position.set(bx, 1.55, K.z1-0.022); gRoom.add(rock);
+    var sw = { kind:'tap', sub:'switch', on:false, light:kitLight, rocker:rock, bulbs:[M.bulb] };
+    pl.userData.tap = sw; tapParts.push(pl);
+    rock.userData.tap = sw; tapParts.push(rock);
+    TAPS.push(sw);
+  })();
   (function(){
     var bx = mx(4.60);
     var base = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.075, 0.035, 16), M.frame);
@@ -4534,8 +4882,8 @@ function buildWorld(){
   cullList.push(outP);   /* снаружи (вылетел за фасад) город-задник прячется */
   /* земля далеко внизу: 12 этажей ≈ 33 м */
   var GROUND_Y = -33.4;
-  var yard = new THREE.Mesh(new THREE.PlaneGeometry(420, 420),
-    new THREE.MeshBasicMaterial({ map: texYard }));
+  var yardMat = new THREE.MeshBasicMaterial({ map: texYard });
+  var yard = new THREE.Mesh(new THREE.PlaneGeometry(420, 420), yardMat);
   yard.rotation.x = -Math.PI/2;
   yard.position.set(mx(3.2), GROUND_Y, 4.0); gRoom.add(yard);
   /* корпус дома под квартирой — из окна вниз виден свой дом до земли */
@@ -4553,8 +4901,25 @@ function buildWorld(){
     nb.material.map.repeat.set(3, bd[3]/3.6);
     nb.position.set(mx(bd[0]), GROUND_Y + bd[3]/2, bd[1]);
     nb.receiveShadow = true; gRoom.add(nb);
+    OUT_MATS.push(nb.material);
   });
+  OUT_MATS.push(M.outside, yardMat, towerMat);
 
+  /* зима: снег на дворе и за окном */
+  applySnow = function(winter){
+    if (!M.outside) return;
+    if (winter){
+      if (!texOutsideWinter) texOutsideWinter = ctex(1024,512,function(g,w,h){ paintOutside(g,w,h,true); });
+      if (!texYardWinter) texYardWinter = ctex(1024,1024,function(g,w,h){ paintYard(g,w,h,true); });
+      M.outside.map = texOutsideWinter;
+      yardMat.map = texYardWinter;
+    } else {
+      M.outside.map = texOutside;
+      yardMat.map = texYard;
+    }
+    M.outside.needsUpdate = true;
+    yardMat.needsUpdate = true;
+  };
   /* индексы подсказок/размеров пересобрать по MX */
   hsEls.forEach(function(h){ h.anchor.copy(P3(h.canon[0], h.canon[1], h.canon[2])); });
   dimEls.forEach(function(d){ d.anchor.copy(P3(d.canon[0], d.canon[1], d.canon[2])); });
@@ -4760,7 +5125,7 @@ function setMode(m){
   $('#hint').textContent = walking
     ? (TOUCH.on
         ? 'Джойстик слева — идти · свайп — смотреть · кнопки справа — действия · ☰ — планшет'
-        : 'Клик — мышь · WASD — идти · ЛКМ — открыть/использовать · СКМ — взять · ПКМ — поставить · 1–9 слоты · R — поворот · P — подгонка · J — полёт · TAB — планшет · F — что не так · V — обзор · Esc — выйти')
+        : 'Клик — мышь · WASD — идти · ЛКМ — открыть/использовать · СКМ — взять · ПКМ — поставить · 1–9 слоты · R — поворот · P — подгонка · G — покраска · J — полёт · TAB — планшет · F — что не так · V — обзор · Esc — выйти')
     : 'ЛКМ — вращать · клик по вещи — взять · клик с вещью в руке — поставить · ←/→ — этапы · TAB — планшет';
   controls.enabled = !walking;
   $('#bigplay').classList.toggle('hidden', !walking || walk.locked);
@@ -4837,6 +5202,12 @@ document.addEventListener('keydown', function(e){
   if (fineMode && held >= 0 && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.code) >= 0){
     e.preventDefault();                 /* стрелки двигают вещь, а не игрока */
     moveHeldFine(e.code);
+    return;
+  }
+  if (e.code === 'KeyG' && !e.repeat){
+    var pkG = (state.mode === 'walk') ? paintUnder(0, 0) : paintUnder(ndc.x, ndc.y);
+    if (pkG) openPaintPick(pkG);
+    else toast('Наведись на стену кухни или гарнитур — и жми G');
     return;
   }
   if (e.code === 'KeyP'){
@@ -5118,6 +5489,9 @@ function openPaintPick(kind){
       pr.appendChild(b);
     });
   } else pr.classList.add('hidden');
+  var pt = $('#ppTex');
+  if (kind === 'handle'){ pt.classList.add('hidden'); }
+  else { pt.classList.remove('hidden'); pt.style.display = 'flex'; texRow(pt, kind, true); }
   var cust = $('#ppCustom');
   cust.value = kind === 'wall' ? state.wall : (kind === 'front' ? state.facade : (state.handle || '#999999'));
   cust.oninput = function(e){
@@ -5334,6 +5708,9 @@ function snapshot(){
   return { inv: state.inv.slice(), moved: JSON.parse(JSON.stringify(state.moved)),
            wall: state.wall, facade: state.facade, stage: state.stage, mirror: state.mirror,
            wallPat: state.wallPat || 'solid', handle: state.handle || '',
+           sunReal: state.sunReal !== false, autoTime: state.autoTime !== false,
+           hour: state.hour || 13, season: (typeof state.season === 'number' ? state.season : -1),
+           wallTex: state.wallTex || null, facadeTex: state.facadeTex || null,
            mirrOn: state.mirrOn !== false, spots: state.spots, dims: state.dims, map: state.map };
 }
 function savePreset(){
@@ -5355,6 +5732,12 @@ function applyPreset(p){
   state.facade = d.facade || state.facade;
   state.wallPat = d.wallPat || 'solid';
   state.handle = d.handle || state.handle;
+  if (typeof d.sunReal === 'boolean') state.sunReal = d.sunReal;
+  if (typeof d.autoTime === 'boolean') state.autoTime = d.autoTime;
+  if (typeof d.hour === 'number') state.hour = d.hour;
+  if (typeof d.season === 'number') state.season = d.season;
+  state.wallTex = d.wallTex || null;
+  state.facadeTex = d.facadeTex || null;
   state.stage = (typeof d.stage === 'number') ? d.stage : state.stage;
   state.mirror = !!d.mirror;
   if (typeof d.mirrOn === 'boolean') state.mirrOn = d.mirrOn;
@@ -5366,8 +5749,12 @@ function applyPreset(p){
   save();
   if (flip) flipView();
   applyWallPaint();
-  M.front.color.set(state.facade);
+  applyFrontPaint();
   applyHandle();
+  applySun(true);
+  markTexRows();
+  if ($('#ckSunReal')) $('#ckSunReal').checked = state.sunReal !== false;
+  if ($('#ckAutoTime')) $('#ckAutoTime').checked = state.autoTime !== false;
   $('#pw').value = state.wall; $('#pf').value = state.facade;
   $('#ckMirror').checked = state.mirror;
   markSw($('#swWalls'), state.wall); markSw($('#swFacades'), state.facade); markSw($('#swHandles'), state.handle);
@@ -5663,6 +6050,7 @@ function tick(){
   var hideF = camera.position.z < -1.7;
   cullList.forEach(function(m){ m.visible = !hideF; });
   doorTick(dt);
+  if (now - lastSunT > 15000){ lastSunT = now; if (state.sunReal !== false && state.autoTime !== false) applySun(); }
   if (state.mode === 'walk' && (++bugAim.cnt % 6 === 0)) invHintTick();
   bugAim.cnt++;
   if (state.bugmode && bugAim.cnt % 6 === 0) updateBugAim();
@@ -5738,7 +6126,7 @@ function swatches(host, list, cur, onPick){
   });
 }
 function pickWall(hex){ state.wall = hex; save(); applyWallPaint(); $('#pw').value = hex; markSw($('#swWalls'), hex); }
-function pickFacade(hex){ state.facade = hex; save(); M.front.color.set(hex); $('#pf').value = hex; markSw($('#swFacades'), hex); }
+function pickFacade(hex){ state.facade = hex; save(); applyFrontPaint(); $('#pf').value = hex; markSw($('#swFacades'), hex); }
 function pickHandle(hex){ state.handle = hex; save(); applyHandle(); markSw($('#swHandles'), hex); }
 function pickWallPat(id){
   state.wallPat = id; save(); applyWallPaint();
@@ -5752,6 +6140,8 @@ swatches($('#swHandles'), D.palette.handles, state.handle, pickHandle);
 $('#pw').value = state.wall; $('#pf').value = state.facade;
 $('#pw').addEventListener('input', function(e){ pickWall(e.target.value); });
 $('#pf').addEventListener('input', function(e){ pickFacade(e.target.value); });
+texRow($('#swWallTex'), 'wall', false);
+texRow($('#swFacadeTex'), 'front', false);
 (function(){
   var host = $('#patRow');
   PATTERNS.forEach(function(pt){
@@ -5763,6 +6153,45 @@ $('#pf').addEventListener('input', function(e){ pickFacade(e.target.value); });
 })();
 $('#ckMirror').checked = state.mirror; $('#ckMirr').checked = state.mirrOn !== false;
 $('#ckSpots').checked = state.spots; $('#ckDims').checked = state.dims;
+/* свет: время и сезон */
+(function(){
+  function fmtHour(v){ var h = Math.floor(v)%24, m = Math.round((v - Math.floor(v))*60); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
+  var hr = $('#hourR');
+  $('#ckSunReal').checked = state.sunReal !== false;
+  $('#ckAutoTime').checked = state.autoTime !== false;
+  hr.value = state.hour || 13;
+  $('#ckSunReal').addEventListener('change', function(e){
+    state.sunReal = e.target.checked; save(); applySun(true);
+    toast(state.sunReal ? 'Реалистичное освещение: солнце по времени и сезону' : 'Обычный свет вернулся');
+  });
+  $('#ckAutoTime').addEventListener('change', function(e){
+    state.autoTime = e.target.checked; save(); applySun(true);
+  });
+  function setHour(v){
+    state.hour = v; state.autoTime = false; save();
+    $('#ckAutoTime').checked = false; hr.value = v;
+    $('#hourLbl').textContent = fmtHour(v);
+    applySun(true);
+  }
+  hr.addEventListener('input', function(e){ setHour(+e.target.value); });
+  Array.prototype.forEach.call($$('#timeChips button'), function(b){ b.addEventListener('click', function(){ setHour(+b.dataset.h); }); });
+  Array.prototype.forEach.call($$('#seasonChips button'), function(b){
+    b.addEventListener('click', function(){
+      state.season = +b.dataset.s; save();
+      $$('#seasonChips button').forEach(function(x){ x.classList.toggle('on', x === b); });
+      $('#seasonLbl').textContent = b.textContent.replace(/[^А-Яа-яЁё\s]/g, '').trim() || 'по дате';
+      applySun(true);
+    });
+  });
+  if (state.season >= 0){
+    var sb = $$('#seasonChips button').filter(function(x){ return +x.dataset.s === state.season; })[0];
+    if (sb){ sb.classList.add('on'); $('#seasonLbl').textContent = sb.textContent.replace(/[^А-Яа-яЁё\s]/g, '').trim(); }
+  }
+  $('#hourLbl').textContent = fmtHour(state.autoTime !== false ? nowHour() : (state.hour || 13)) + (state.autoTime !== false ? ' · живое' : '');
+  setInterval(function(){
+    if (state.autoTime !== false){ var nh = nowHour(); hr.value = nh; $('#hourLbl').textContent = fmtHour(nh) + ' · живое'; }
+  }, 20000);
+})();
 $('#ckFurn').checked = state.furn; $('#ckMap').checked = state.map;
 $('#ckMirror').addEventListener('change', function(e){
   state.mirror = e.target.checked; save();
@@ -6043,7 +6472,12 @@ if (TOUCH.on) touchInit();
 if (state.mirror){ flipView(); }
 buildWorld();
 applyWallPaint();
+applyFrontPaint();
 applyHandle();
+applySun(true);
+/* выбранные текстуры — догрузить, иначе после запуска покажется узор/гладкость */
+if (state.wallTex) loadTexSet(state.wallTex, function(){ applyWallPaint(); });
+if (state.facadeTex) loadTexSet(state.facadeTex, function(){ applyFrontPaint(); });
 if (state.stage === 4){ applyStage(5); }   /* остался «этап 4» (шкафы сняты) — показываем финал: дверцы на месте */
 gFurn.visible = state.furn; gProps.visible = state.furn;
 state.mode = 'walk';

@@ -35,6 +35,9 @@ def free_port(start: int, tries: int = 10) -> int:
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
+    extensions_map = dict(getattr(http.server.SimpleHTTPRequestHandler, "extensions_map", {}))
+    extensions_map.update({".webp": "image/webp", ".woff2": "font/woff2"})
+
     def end_headers(self) -> None:
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
