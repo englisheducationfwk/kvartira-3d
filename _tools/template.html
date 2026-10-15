@@ -467,6 +467,7 @@ body.touch #paintPick{bottom:calc(210px + env(safe-area-inset-bottom))}
             <button data-s="1">🌱 Весна</button><button data-s="2">☀️ Лето</button><button data-s="3">🍂 Осень</button>
           </div>
           <p style="font-size:11.8px;color:#9a9384;margin-top:8px">Зимой двор и крыши в снегу, солнце низкое. Ночью квартира тёмная — свет включается выключателями у дверей.</p>
+          <label class="chk" style="margin-top:10px"><input type="checkbox" id="ckGfx" checked><span>Реалистичная графика — затемнение в углах (AO), свечение, сглаживание; на телефоне лучше выключать</span></label>
         </div>
         <div class="pblock">
           <h3>Пресеты <span class="sp">твои расстановки</span></h3>
@@ -593,6 +594,7 @@ body.touch #paintPick{bottom:calc(210px + env(safe-area-inset-bottom))}
 
 <script>/*__THREE__*/</script>
 <script>/*__ORBIT__*/</script>
+<script>/*__POSTFX__*/</script>
 <script>window.__DATA__ = /*__DATA__*/;</script>
 <script>
 /* =====================================================================
@@ -613,7 +615,7 @@ var fmt = function(n){ return Math.round(n).toLocaleString('ru-RU') + ' ₽'; };
 var LS = 'flat44k.v5';   /* v5: зеркала по умолчанию выкл */
 var state = { stage:0, mode:'walk', mirror:false, wall:D.palette.walls[0].hex, facade:D.palette.facades[0].hex,
               spots:true, dims:false, furn:true, map:false, mirrOn:false, view:'overview',
-              sunReal:true, autoTime:true, hour:13, season:-1, wallTex:null, facadeTex:null,
+              sunReal:true, autoTime:true, hour:13, season:-1, wallTex:null, facadeTex:null, gfxReal:true,
               wallPat:'solid', handle:D.palette.handles[0].hex,
               variant:{}, bought:{}, stepDone:{}, inv:[], moved:{}, wpos:null, wyaw:0, wpitch:0, wpoy:0, noclip:false };
 try { var saved = JSON.parse(localStorage.getItem(LS)||'{}'); for (var k in saved) if (k in state) state[k]=saved[k]; } catch(e){}
@@ -710,7 +712,9 @@ var texLoader = new THREE.TextureLoader();
 function texFor(set, kind, slot){
   var key = set.def.id + ':' + kind + ':' + slot;
   if (!TEXCACHE[key]){
-    var src = slot === 'color' ? set.color : (slot === 'normal' ? set.normal : set.rough);
+    var src = slot === 'color' ? set.color
+            : (slot === 'normal' ? set.normal
+            : (slot === 'ao' ? set.ao : set.rough));
     if (!src) return null;
     var t = src.clone();
     t.needsUpdate = true;
@@ -728,14 +732,15 @@ function loadTexSet(id, cb){
   var set = TEXCACHE['set:' + id];
   if (set && set.ready) return cb && cb(set);
   if (!set){
-    set = { def: def, color: null, normal: null, rough: null, ready: false };
+    set = { def: def, color: null, normal: null, rough: null, ao: null, ready: false };
     TEXCACHE['set:' + id] = set;
-    var base = def.dir + '/', pend = 3;
+    var base = def.dir + '/', pend = 4;
     function done(){ if (--pend === 0){ set.ready = true; if (cb) cb(set); } }
     function fail(){ done(); }
     texLoader.load(base + 'color.webp', function(t){ t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; set.color = t; done(); }, undefined, fail);
     texLoader.load(base + 'normal.webp', function(t){ t.wrapS = t.wrapT = THREE.RepeatWrapping; set.normal = t; done(); }, undefined, fail);
     texLoader.load(base + 'rough.webp', function(t){ t.wrapS = t.wrapT = THREE.RepeatWrapping; set.rough = t; done(); }, undefined, fail);
+    texLoader.load(base + 'ao.webp', function(t){ t.wrapS = t.wrapT = THREE.RepeatWrapping; set.ao = t; done(); }, undefined, fail);
   }
 }
 function readySet(id){
@@ -745,13 +750,14 @@ function readySet(id){
 function applyWallPaint(){
   var pat = state.wallPat || 'solid';
   var set = readySet(state.wallTex);
-  M.paint.map = null; M.paint.normalMap = null; M.paint.roughnessMap = null;
+  M.paint.map = null; M.paint.normalMap = null; M.paint.roughnessMap = null; M.paint.aoMap = null;
   M.paint.roughness = .88;
   if (set){
     M.paint.map = texFor(set, 'wall', 'color');
     M.paint.color.set(state.wall);
     if (set.normal){ M.paint.normalMap = texFor(set, 'wall', 'normal'); M.paint.normalScale.set(0.45, 0.45); }
     if (set.rough){ M.paint.roughnessMap = texFor(set, 'wall', 'rough'); M.paint.roughness = 1.0; }
+    if (set.ao){ M.paint.aoMap = texFor(set, 'wall', 'ao'); M.paint.aoMapIntensity = 0.9; }
   } else if (pat !== 'solid'){
     M.paint.map = texPaint(state.wall, pat);
     M.paint.color.set('#ffffff');
@@ -762,13 +768,14 @@ function applyWallPaint(){
 }
 function applyFrontPaint(){
   var set = readySet(state.facadeTex);
-  M.front.map = texGroove; M.front.normalMap = null; M.front.roughnessMap = null;
+  M.front.map = texGroove; M.front.normalMap = null; M.front.roughnessMap = null; M.front.aoMap = null;
   M.front.roughness = .55;
   M.front.color.set(state.facade);
   if (set){
     M.front.map = texFor(set, 'front', 'color');
     if (set.normal){ M.front.normalMap = texFor(set, 'front', 'normal'); M.front.normalScale.set(0.35, 0.35); }
     if (set.rough){ M.front.roughnessMap = texFor(set, 'front', 'rough'); M.front.roughness = 1.0; }
+    if (set.ao){ M.front.aoMap = texFor(set, 'front', 'ao'); M.front.aoMapIntensity = 0.85; }
   }
   M.front.needsUpdate = true;
 }
@@ -1141,6 +1148,8 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.left=-8; sun.shadow.camera.right=8; sun.shadow.camera.top=8; sun.shadow.camera.bottom=-8;
 sun.shadow.camera.near=1; sun.shadow.camera.far=26; sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.02;
+if (!(('ontouchstart' in window) || navigator.maxTouchPoints > 0)){ sun.shadow.mapSize.set(4096, 4096); }
+sun.shadow.radius = 3;
 scene.add(sun); scene.add(sun.target);
 var fill = new THREE.DirectionalLight(0xdde7f2, 0.32); fill.position.set(-4, 4.5, 4); scene.add(fill);
 var fill2 = new THREE.DirectionalLight(0xfff0e0, 0.18); fill2.position.set(6, 3.0, 6.5); scene.add(fill2);
@@ -1282,6 +1291,45 @@ function applySun(force){
   }
 }
 var lastSunT = 0;
+
+/* =====================================================================
+   ФОТОРЕАЛИСТИЧНЫЙ РЕНДЕР: SSAO (затемнение в углах), свечение, сглаживание
+   ===================================================================== */
+var composer = null, ssaoPass = null, bloomPass = null, fxaaPass = null;
+function postSize(){
+  if (!composer) return;
+  var w = stageEl.clientWidth, h = stageEl.clientHeight;
+  if (!w || !h) return;
+  composer.setSize(w, h);
+  if (ssaoPass) ssaoPass.setSize(w, h);
+  if (bloomPass) bloomPass.setSize(w, h);
+  if (fxaaPass && fxaaPass.material && fxaaPass.material.uniforms.resolution){
+    var pr = renderer.getPixelRatio();
+    fxaaPass.material.uniforms.resolution.value.set(1/(w*pr), 1/(h*pr));
+  }
+}
+function initPost(){
+  if (composer || !THREE.EffectComposer) return;
+  try {
+    composer = new THREE.EffectComposer(renderer);
+    composer.setPixelRatio(renderer.getPixelRatio());
+    composer.addPass(new THREE.RenderPass(scene, camera));
+    ssaoPass = new THREE.SSAOPass(scene, camera, stageEl.clientWidth || 1280, stageEl.clientHeight || 720);
+    ssaoPass.kernelRadius = 0.18;
+    ssaoPass.minDistance = 0.0012;
+    ssaoPass.maxDistance = 0.075;
+    composer.addPass(ssaoPass);
+    bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(512, 512), 0.18, 0.55, 0.88);
+    composer.addPass(bloomPass);
+    fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+    composer.addPass(fxaaPass);
+    postSize();
+  } catch(e){ composer = null; }
+}
+function setPost(on){
+  if (on) initPost(); else { composer = null; ssaoPass = bloomPass = fxaaPass = null; }
+  postSize(); paint();
+}
 
 var texFire = ctex(128, 128, function(g,w,h){
   g.fillStyle = '#c23a2b'; g.fillRect(0, 0, w, h);
@@ -1489,6 +1537,7 @@ function makeMirror(w, h){
   mesh.onBeforeRender = function(rend, scn, cam){
     if (state.mirrOn === false) return;
     if (cam === mirrorCam || scn !== scene) return;
+    if (scn.overrideMaterial) return;   /* проходы SSAO — зеркало не трогаем */
     rp.setFromMatrixPosition(mesh.matrixWorld);
     cp.setFromMatrixPosition(cam.matrixWorld);
     rotM.extractRotation(mesh.matrixWorld);
@@ -1579,6 +1628,7 @@ function fixBoxUV(g, w, h, d, s){
   var dims = [[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
   for (var f=0; f<6; f++) for (var i=f*4; i<f*4+4; i++)
     uv.setXY(i, uv.getX(i)*dims[f][0]*s, uv.getY(i)*dims[f][1]*s);
+  g.setAttribute('uv2', new THREE.BufferAttribute(uv.array.slice(), 2));   /* для AO-карт */
   uv.needsUpdate = true;
 }
 var DEF_M = new THREE.MeshStandardMaterial({ color:0xcfcabc, roughness:.95 });
@@ -2768,7 +2818,10 @@ function setViewNow(name){
   markViewUI(name); tween = null;
   paint();
 }
-function paint(){ renderer.render(scene, camera); }
+function paint(){
+  if (composer && state.gfxReal !== false) composer.render();
+  else renderer.render(scene, camera);
+}
 
 /* =====================================================================
    ЧАСТЬ 6. ПРОГУЛКА
@@ -3487,6 +3540,7 @@ function snapshot(){
            sunReal: state.sunReal !== false, autoTime: state.autoTime !== false,
            hour: state.hour || 13, season: (typeof state.season === 'number' ? state.season : -1),
            wallTex: state.wallTex || null, facadeTex: state.facadeTex || null,
+           gfxReal: state.gfxReal !== false,
            mirrOn: state.mirrOn !== false, spots: state.spots, dims: state.dims, map: state.map };
 }
 function savePreset(){
@@ -3514,6 +3568,9 @@ function applyPreset(p){
   if (typeof d.season === 'number') state.season = d.season;
   state.wallTex = d.wallTex || null;
   state.facadeTex = d.facadeTex || null;
+  if (typeof d.gfxReal === 'boolean') state.gfxReal = d.gfxReal;
+  if ($('#ckGfx')) $('#ckGfx').checked = state.gfxReal !== false;
+  setPost(state.gfxReal !== false);
   state.stage = (typeof d.stage === 'number') ? d.stage : state.stage;
   state.mirror = !!d.mirror;
   if (typeof d.mirrOn === 'boolean') state.mirrOn = d.mirrOn;
@@ -3832,13 +3889,14 @@ function tick(){
   if (state.bugmode && bugAim.cnt % 6 === 0) updateBugAim();
   if (held >= 0 && state.mode === 'walk' && !fineMode) updateHeldPreview(false);
   updateOverlays();
-  renderer.render(scene, camera);
+  paint();
 }
 function resize(){
   var w = stageEl.clientWidth, h = stageEl.clientHeight;
   if (!w || !h) return;
   renderer.setSize(w, h, false);
   camera.aspect = w/h; camera.updateProjectionMatrix();
+  postSize();
   paint();
 }
 new ResizeObserver(resize).observe(stageEl);
@@ -3933,6 +3991,11 @@ $('#ckSpots').checked = state.spots; $('#ckDims').checked = state.dims;
 (function(){
   function fmtHour(v){ var h = Math.floor(v)%24, m = Math.round((v - Math.floor(v))*60); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
   var hr = $('#hourR');
+  $('#ckGfx').checked = state.gfxReal !== false;
+  $('#ckGfx').addEventListener('change', function(e){
+    state.gfxReal = e.target.checked; save(); setPost(state.gfxReal);
+    toast(state.gfxReal ? 'Реалистичная графика включена ✨' : 'Облегчённая графика');
+  });
   $('#ckSunReal').checked = state.sunReal !== false;
   $('#ckAutoTime').checked = state.autoTime !== false;
   hr.value = state.hour || 13;
@@ -4251,6 +4314,8 @@ applyWallPaint();
 applyFrontPaint();
 applyHandle();
 applySun(true);
+if (TOUCH.on) state.gfxReal = false;      /* на телефоне — облегчённая графика по умолчанию */
+if (state.gfxReal !== false) initPost();
 /* выбранные текстуры — догрузить, иначе после запуска покажется узор/гладкость */
 if (state.wallTex) loadTexSet(state.wallTex, function(){ applyWallPaint(); });
 if (state.facadeTex) loadTexSet(state.facadeTex, function(){ applyFrontPaint(); });
